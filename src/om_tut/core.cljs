@@ -9,38 +9,47 @@
 
 ;; define your app data so that it doesn't get over-written on reload
 
-(defonce app-state (atom {:count 0}))
+(defonce app-state
+  (atom {:app/title "Animals"
+         :animals/list [[1 "ant"] [2 "antelope"] [3 "bird"] [4 "Cat"] [5 "Dog"]
+      [6 "Lion"] [7 "Mouse"] [8 "Monkey"] [9 "Snake"] [10 "Zebra"]]}))
 
-(defn read [{:keys [state] :as env} key params]
+(defmulti read (fn [env key params] key))
+
+(defmethod read :default
+  [{:keys [state] :as env} key params]
   (let [frame @state]
     (if-let [[_ value] (find frame key)]
-             {:value value}
-             {:value :not-found})))
+      {:value value}
+      {:value :not-found})))
 
-(defn mutate [{:keys [state] :as env} key params]
-  (if (= 'increment key)
-    {:value {:keys [:count]}
-     :action #(swap! state update-in [:count] inc)}
-    {:value :not-found}))
+(defmethod read :animals/list
+  [{:keys [state] :as env} key {:keys [start end]}]
+  {:value (subvec (:animals/list @state) start end)})
 
-(defui Counter
+(defui AnimalsList
+  static om/IQueryParams
+  (params [this]
+          {:start 0 :end 10})
   static om/IQuery
-  (query [this] [:count])
+  (query [this]
+         '[:app/title (:animals/list {:start ?start :end ?end})])
   Object
   (render [this]
-          (let [{:keys [count]} (om/props this)]
+          (let [{:keys [app/title animals/list]} (om/props this)]
             (dom/div nil
-                     (dom/span nil (str "Count: " count))
-                     (dom/button
-                       #js {:onClick (fn [event]
-                                       (om/transact! this '[(increment)]))}
-                       "clickit")))))
+                     (dom/h2 nil title)
+                     (apply dom/ul nil
+                            (map (fn [[i name]]
+                                   (println "i " i " name " name)
+                                   (dom/li nil (str i ". " name)))
+                                 list))))))
 
 (def reconciler
   (om/reconciler {:state app-state
-                  :parser (om/parser {:read read :mutate mutate})}))
+                  :parser (om/parser {:read read})}))
 
-(om/add-root! reconciler Counter (gdom/getElement "app"))
+(om/add-root! reconciler AnimalsList (gdom/getElement "app"))
 
 (defn on-js-reload []
   ;; optionally touch your app-state to force rerendering depending on
