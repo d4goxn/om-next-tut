@@ -43,4 +43,4 @@
   static om/IQuery
   (query [this]
          (let [subquery (om/get-query Person)]
-           '[{:list/one ~subquery} {:list/two ~subquery}])))
+           `[{:list/one ~subquery} {:list/two ~subquery}])))
