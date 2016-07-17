@@ -9,51 +9,38 @@
 
 ;; define your app data so that it doesn't get over-written on reload
 
-(defonce app-state
-  (atom {:app/title "Animals"
-         :animals/list [[1 "ant"] [2 "antelope"] [3 "bird"] [4 "Cat"] [5 "Dog"]
-      [6 "Lion"] [7 "Mouse"] [8 "Monkey"] [9 "Snake"] [10 "Zebra"]]}))
+(def init-data
+  {:list/one [{:name "John" :points 0}
+              {:name "Mary" :points 0}
+              {:name "Bob"  :points 0}]
+   :list/two [{:name "Mary" :points 0 :age 27}
+              {:name "Gwen" :points 0}
+              {:name "Jeff" :points 0}]})
 
-(defmulti read (fn [env key params] key))
+(defmulti read om/dispatch)
 
-(defmethod read :default
-  [{:keys [state] :as env} key params]
+(defn get-people [state key]
   (let [frame @state]
-    (if-let [[_ value] (find frame key)]
-      {:value value}
-      {:value :not-found})))
+    (into [] (map #(get-in frame %)) (get frame key))))
 
-(defmethod read :animals/list
-  [{:keys [state] :as env} key {:keys [start end]}]
-  {:value (subvec (:animals/list @state) start end)})
+(defmethod read :list/one
+  [{:keys [state] :as env} key params]
+  {:value (get-people state key)})
 
-(defui AnimalsList
-  static om/IQueryParams
-  (params [this]
-          {:start 0 :end 10})
+(defmethod read :list/two
+  [{:keys [state] :as env} key params]
+  {:value (get-people state key)})
+
+(defui Person
+  static om/Ident
+  (ident [this {:keys [name]}]
+         [:person/by-name name])
   static om/IQuery
   (query [this]
-         '[:app/title (:animals/list {:start ?start :end ?end})])
-  Object
-  (render [this]
-          (let [{:keys [app/title animals/list]} (om/props this)]
-            (dom/div nil
-                     (dom/h2 nil title)
-                     (apply dom/ul nil
-                            (map (fn [[i name]]
-                                   (println "i " i " name " name)
-                                   (dom/li nil (str i ". " name)))
-                                 list))))))
+         '[:name :points]))
 
-(def reconciler
-  (om/reconciler {:state app-state
-                  :parser (om/parser {:read read})}))
-
-(om/add-root! reconciler AnimalsList (gdom/getElement "app"))
-
-(defn on-js-reload []
-  ;; optionally touch your app-state to force rerendering depending on
-  ;; your application
-  (swap! app-state update-in [:__figwheel_counter] inc)
-  (println (str "figwheel counter: ", (get-in @app-state [:__figwheel_counter])))
-)
+(defui RootView
+  static om/IQuery
+  (query [this]
+         (let [subquery (om/get-query Person)]
+           '[{:list/one ~subquery} {:list/two ~subquery}])))
