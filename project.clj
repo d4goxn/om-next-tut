@@ -6,10 +6,10 @@
 
   :min-lein-version "2.6.1"
 
-  :dependencies [[org.omcljs/om "1.0.0-alpha34"]
-                 [org.clojure/clojure "1.8.0"]
-                 [org.clojure/clojurescript "1.8.51"]
-                 [org.clojure/core.async "0.2.374"
+  :dependencies [[org.omcljs/om "1.0.0-alpha40"]
+                 [org.clojure/clojure "1.9.0-alpha10"]
+                 [org.clojure/clojurescript "1.9.89"]
+                 [org.clojure/core.async "0.2.385"
                   :exclusions [org.clojure/tools.reader]]]
 
   :plugins [[lein-figwheel "0.5.4-7"]
